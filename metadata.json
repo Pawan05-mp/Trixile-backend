@@ -1,0 +1,6 @@
+{
+  "name": "Trixile",
+  "description": "Trixile helps you find the perfect place in Chennai for dating, friend hangouts, solo outings, coffee, and more based on experience context rather than just location.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

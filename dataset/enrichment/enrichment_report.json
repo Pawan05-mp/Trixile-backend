@@ -1,0 +1,8 @@
+{
+  "total_records": 107,
+  "enriched_records": 106,
+  "failed_records": 1,
+  "missing_fields": {
+    "is_open_now": 1
+  }
+}
