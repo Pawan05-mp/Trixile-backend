@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, time, timezone
 
 from sqlalchemy import (
-    Float, Integer, String, DateTime, Text, Time, Index,
+    Float, Integer, DateTime, Text, Time, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,7 +27,6 @@ class Place(Base):
     rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     reviews: Mapped[int | None] = mapped_column(Integer, nullable=True)
     average_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
-    budget_level: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 'budget' | 'moderate' | 'upscale'
 
     # ── Location ─────────────────────────────────────────────
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)

@@ -9,7 +9,7 @@ with two computed bonuses that are evaluated in Python after the
 DB fetch (avoiding a complex SQL CASE expression in the ORDER BY):
 
   - Category bonus  +1.0 for family-friendly venue types
-  - Budget bonus    +0.5 for 'budget', +0.3 for 'moderate' venues
+  - Cost bonus      +0.5 for cheap venues, +0.3 for moderately priced venues
 
 These bonuses are added to ``computed_score`` and exposed as
 ``family_category_bonus`` / ``family_budget_bonus`` for transparency.
@@ -78,10 +78,10 @@ FAMILY_CATEGORY_BONUS_SET: frozenset[str] = frozenset({
     "Museum", "Theme Park", "Lake", "Playground",
 })
 
-FAMILY_BUDGET_BONUS: dict[str, float] = {
-    "budget": 0.5,
-    "moderate": 0.3,
-}
+FAMILY_COST_BONUS_THRESHOLDS: list[tuple[float, float]] = [
+    (500, 0.5),    # average_cost < 500 → budget tier → +0.5
+    (1500, 0.3),   # 500 <= average_cost < 1500 → moderate tier → +0.3
+]
 
 
 def _family_category_bonus(category: str | None) -> float:
@@ -91,10 +91,19 @@ def _family_category_bonus(category: str | None) -> float:
     return 0.0
 
 
-def _family_budget_bonus(budget_level: str | None) -> float:
-    """Return the budget bonus for a family-occasion place."""
-    if budget_level:
-        return FAMILY_BUDGET_BONUS.get(budget_level.lower(), 0.0)
+def _family_cost_bonus(average_cost: float | None) -> float:
+    """Return a cost-based bonus for family-occasion places.
+
+    Converts ``average_cost`` into tiers and assigns a bonus:
+      - < 500   → +0.50
+      - < 1500  → +0.30
+      - ≥ 1500  →  0.00
+    """
+    if average_cost is None:
+        return 0.0
+    for threshold, bonus in FAMILY_COST_BONUS_THRESHOLDS:
+        if average_cost < threshold:
+            return bonus
     return 0.0
 
 
@@ -215,13 +224,11 @@ class RecommendationService:
             # ── Family bonuses ─────────────────────────────
             if is_family:
                 cat_bonus = _family_category_bonus(place.category)
-                bud_bonus = _family_budget_bonus(
-                    getattr(place, "budget_level", None)
-                )
-                total_bonus = cat_bonus + bud_bonus
+                cost_bonus = _family_cost_bonus(place.average_cost)
+                total_bonus = cat_bonus + cost_bonus
                 d["computed_score"] = round(d["computed_score"] + total_bonus, 4)
                 d["family_category_bonus"] = cat_bonus
-                d["family_budget_bonus"] = bud_bonus
+                d["family_cost_bonus"] = cost_bonus
 
             # Add distance_km when a reference point was provided
             if (

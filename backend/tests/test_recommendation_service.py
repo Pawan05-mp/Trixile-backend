@@ -6,10 +6,10 @@ from app.services.recommendation_service import (
     OCCASION_WEIGHTS,
     FAMILY_CATEGORY_BONUS,
     FAMILY_CATEGORY_BONUS_SET,
-    FAMILY_BUDGET_BONUS,
+    FAMILY_COST_BONUS_THRESHOLDS,
     _build_score_expression,
     _family_category_bonus,
-    _family_budget_bonus,
+    _family_cost_bonus,
     RecommendationService,
 )
 from app.models.place import Place
@@ -89,25 +89,27 @@ def test_family_category_bonus_ineligible_categories(category):
     assert _family_category_bonus(category) == 0.0
 
 
-def test_family_budget_bonus_budget():
-    assert _family_budget_bonus("budget") == FAMILY_BUDGET_BONUS["budget"]
+def test_family_cost_bonus_cheap():
+    assert _family_cost_bonus(200) == 0.5
 
 
-def test_family_budget_bonus_moderate():
-    assert _family_budget_bonus("moderate") == FAMILY_BUDGET_BONUS["moderate"]
+def test_family_cost_bonus_moderate():
+    assert _family_cost_bonus(800) == 0.3
 
 
-def test_family_budget_bonus_upscale():
-    assert _family_budget_bonus("upscale") == 0.0
+def test_family_cost_bonus_expensive():
+    assert _family_cost_bonus(2000) == 0.0
 
 
-def test_family_budget_bonus_none():
-    assert _family_budget_bonus(None) == 0.0
+def test_family_cost_bonus_none():
+    assert _family_cost_bonus(None) == 0.0
 
 
-def test_family_budget_bonus_case_insensitive():
-    assert _family_budget_bonus("Budget") == FAMILY_BUDGET_BONUS["budget"]
-    assert _family_budget_bonus("MODERATE") == FAMILY_BUDGET_BONUS["moderate"]
+def test_family_cost_bonus_boundaries():
+    assert _family_cost_bonus(499.99) == 0.5
+    assert _family_cost_bonus(500) == 0.3
+    assert _family_cost_bonus(1499.99) == 0.3
+    assert _family_cost_bonus(1500) == 0.0
 
 
 # ── Expression builder tests ─────────────────────────────────
@@ -210,7 +212,7 @@ async def test_recommend_family_base_score():
         quiet_score=7.0,
         popularity_score=7.5,
         social_score=6.5,
-        budget_level="upscale",
+        average_cost=2000,
     )
 
     mock_result.all.return_value = [(place, 7.875)]
@@ -223,7 +225,7 @@ async def test_recommend_family_base_score():
     assert results[0]["name"] == "Generic Venue"
     assert results[0]["computed_score"] == 7.875
     assert results[0]["family_category_bonus"] == 0.0
-    assert results[0]["family_budget_bonus"] == 0.0
+    assert results[0]["family_cost_bonus"] == 0.0
 
 
 @pytest.mark.asyncio
@@ -247,7 +249,7 @@ async def test_recommend_family_category_bonus_applied():
         quiet_score=7.0,
         popularity_score=7.5,
         social_score=6.5,
-        budget_level=None,
+        average_cost=2000,
     )
 
     mock_result.all.return_value = [(place, 7.875)]
@@ -257,13 +259,13 @@ async def test_recommend_family_category_bonus_applied():
     results = await svc.recommend(occasion="family", limit=20)
 
     assert results[0]["family_category_bonus"] == 1.0
-    assert results[0]["family_budget_bonus"] == 0.0
+    assert results[0]["family_cost_bonus"] == 0.0
     assert results[0]["computed_score"] == round(7.875 + 1.0, 4)
 
 
 @pytest.mark.asyncio
-async def test_recommend_family_budget_bonus_applied():
-    """Budget-level 'budget' triggers +0.5 bonus."""
+async def test_recommend_family_cost_bonus_applied():
+    """average_cost < 500 triggers +0.5 bonus."""
     mock_db = AsyncMock()
     mock_result = MagicMock()
 
@@ -282,7 +284,7 @@ async def test_recommend_family_budget_bonus_applied():
         quiet_score=6.0,
         popularity_score=6.5,
         social_score=5.5,
-        budget_level="budget",
+        average_cost=200,
     )
 
     mock_result.all.return_value = [(place, 6.75)]
@@ -292,13 +294,13 @@ async def test_recommend_family_budget_bonus_applied():
     results = await svc.recommend(occasion="family", limit=20)
 
     assert results[0]["family_category_bonus"] == 1.0
-    assert results[0]["family_budget_bonus"] == 0.5
+    assert results[0]["family_cost_bonus"] == 0.5
     assert results[0]["computed_score"] == round(6.75 + 1.0 + 0.5, 4)
 
 
 @pytest.mark.asyncio
-async def test_recommend_family_moderate_budget_bonus():
-    """Budget-level 'moderate' triggers +0.3 bonus."""
+async def test_recommend_family_moderate_cost_bonus():
+    """average_cost 500–1500 triggers +0.3 bonus."""
     mock_db = AsyncMock()
     mock_result = MagicMock()
 
@@ -317,7 +319,7 @@ async def test_recommend_family_moderate_budget_bonus():
         quiet_score=6.0,
         popularity_score=7.0,
         social_score=6.0,
-        budget_level="moderate",
+        average_cost=800,
     )
 
     mock_result.all.return_value = [(place, 7.55)]
@@ -327,7 +329,7 @@ async def test_recommend_family_moderate_budget_bonus():
     results = await svc.recommend(occasion="family", limit=20)
 
     assert results[0]["family_category_bonus"] == 1.0
-    assert results[0]["family_budget_bonus"] == 0.3
+    assert results[0]["family_cost_bonus"] == 0.3
     assert results[0]["computed_score"] == round(7.55 + 1.0 + 0.3, 4)
 
 
@@ -361,7 +363,7 @@ async def test_recommend_family_bonuses_not_on_other_occasions():
     results = await svc.recommend(occasion="date", limit=20)
 
     assert "family_category_bonus" not in results[0]
-    assert "family_budget_bonus" not in results[0]
+    assert "family_cost_bonus" not in results[0]
 
 
 @pytest.mark.asyncio
@@ -374,14 +376,14 @@ async def test_recommend_family_re_sorted_by_total_score():
         id="aaaaaaaa-0000-0000-0000-000000000001",
         name="Plain Venue",
         category="Cafe",
-        budget_level="upscale",
+        average_cost=2000,
         comfort_score=9.0, quality_score=9.0,
     )
     place_b = Place(
         id="bbbbbbbb-0000-0000-0000-000000000001",
         name="Family Park Budget",
         category="Park",
-        budget_level="budget",
+        average_cost=200,
         comfort_score=7.0, quality_score=7.0,
     )
 
