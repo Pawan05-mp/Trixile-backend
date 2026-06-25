@@ -1,6 +1,9 @@
+import sys
+import pathlib
 import time
 from contextlib import asynccontextmanager
-import pathlib
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import uvicorn
 from fastapi import FastAPI, Request, Depends
