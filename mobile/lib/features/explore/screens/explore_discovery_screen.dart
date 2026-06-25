@@ -82,7 +82,7 @@ class _ExploreDiscoveryScreenState extends ConsumerState<ExploreDiscoveryScreen>
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => context.push(AppRouter.filters),
+                    onTap: () => context.push(AppRouter.search),
                     child: Container(
                       margin: const EdgeInsets.all(4),
                       width: 44,

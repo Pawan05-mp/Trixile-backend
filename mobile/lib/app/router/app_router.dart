@@ -7,7 +7,8 @@ import '../../features/auth/screens/create_account_screen.dart';
 import '../../features/auth/screens/occasion_selection_screen.dart';
 import '../../features/home/screens/home_dashboard_screen.dart';
 import '../../features/explore/screens/explore_discovery_screen.dart';
-import '../../features/search/screens/filters_screen.dart';
+import '../../features/search/screens/search_screen.dart';
+import '../../features/Filter/screens/filters_screen.dart';
 import '../../features/place_details/screens/place_peek_screen.dart';
 import '../../features/favorites/screens/saved_places_map_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
@@ -29,6 +30,7 @@ class AppRouter {
   static const String occasionSelection = '/onboarding';
   static const String home = '/home';
   static const String explore = '/explore';
+  static const String search = '/search';
   static const String filters = '/filters';
   static const String placePeek = '/place-peek';
   static const String savedPlaces = '/saved-places';
@@ -101,6 +103,11 @@ class AppRouter {
       GoRoute(
         path: explore,
         builder: (context, state) => const ExploreDiscoveryScreen(),
+      ),
+
+      GoRoute(
+        path: search,
+        builder: (context, state) => const SearchScreen(),
       ),
 
       GoRoute(

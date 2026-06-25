@@ -62,7 +62,7 @@ class HomeDashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.marginMobile),
               child: TextField(
                 readOnly: true,
-                onTap: () => context.push(AppRouter.filters),
+                onTap: () => context.push(AppRouter.search),
                 style: AppTypography.bodyLg,
                 decoration: InputDecoration(
                   hintText: 'Search places...',
