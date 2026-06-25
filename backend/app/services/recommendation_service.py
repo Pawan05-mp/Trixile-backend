@@ -192,7 +192,6 @@ class RecommendationService:
                 "longitude": place.longitude,
                 "date_score": place.date_score,
                 "friends_score": place.friends_score,
-                "family_score": place.family_score,
                 "solo_score": place.solo_score,
                 "romantic_score": place.romantic_score,
                 "conversation_score": place.conversation_score,

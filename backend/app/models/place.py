@@ -36,7 +36,6 @@ class Place(Base):
     # ── Occasion scores ──────────────────────────────────────
     date_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
     friends_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
-    family_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
     solo_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
 
     # ── Atmosphere scores ────────────────────────────────────
@@ -77,6 +76,5 @@ class Place(Base):
     __table_args__ = (
         Index("idx_places_date_score", "date_score"),
         Index("idx_places_friends_score", "friends_score"),
-        Index("idx_places_family_score", "family_score"),
         Index("idx_places_solo_score", "solo_score"),
     )
