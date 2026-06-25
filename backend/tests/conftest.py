@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.main import app
-from app.db.database import get_db
+from app.db.session import get_db
 
 
 @pytest.fixture

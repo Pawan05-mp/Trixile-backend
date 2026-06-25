@@ -1,52 +1,101 @@
 """Recommendation engine with weighted scoring per occasion.
 
-Adapted to match the existing Supabase schema (no PostGIS,
-no budget_level, no JSONB tag columns).
+Each occasion has a centralised weight configuration. The score
+expression is built dynamically using func.coalesce() to prevent
+NULL columns from crashing the query.
+
+For the ``family`` occasion the base weighted score is augmented
+with two computed bonuses that are evaluated in Python after the
+DB fetch (avoiding a complex SQL CASE expression in the ORDER BY):
+
+  - Category bonus  +1.0 for family-friendly venue types
+  - Budget bonus    +0.5 for 'budget', +0.3 for 'moderate' venues
+
+These bonuses are added to ``computed_score`` and exposed as
+``family_category_bonus`` / ``family_budget_bonus`` for transparency.
 """
 
 from __future__ import annotations
 
 import math
 
-from sqlalchemy import Float, case, cast, select
+from sqlalchemy import Float, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.place import Place
 
 
 # ── Weight definitions ───────────────────────────────────────
+# Each entry maps a DB column name → its weight.
+# Weights for a single occasion must sum to 1.0 (± rounding).
 
 OCCASION_WEIGHTS: dict[str, dict[str, float]] = {
     "date": {
-        "date_score": 0.40,
+        "date_score": 0.25,
         "romantic_score": 0.20,
         "conversation_score": 0.15,
+        "scenic_score": 0.10,
+        "photo_score": 0.10,
+        "comfort_score": 0.05,
+        "quality_score": 0.10,
+        "popularity_score": 0.05,
+    },
+    "friends": {
+        "friends_score": 0.25,
+        "social_score": 0.20,
+        "activity_score": 0.15,
+        "stimulation_score": 0.10,
+        "photo_score": 0.05,
         "quality_score": 0.15,
         "popularity_score": 0.10,
     },
-    "friends": {
-        "friends_score": 0.40,
-        "social_score": 0.20,
-        "activity_score": 0.20,
-        "quality_score": 0.10,
+    "family": {
+        "comfort_score": 0.25,
+        "quality_score": 0.15,
+        "nature_score": 0.15,
+        "scenic_score": 0.10,
+        "quiet_score": 0.10,
         "popularity_score": 0.10,
+        "activity_score": 0.10,
+        "social_score": 0.05,
     },
     "solo": {
-        "solo_score": 0.40,
-        "comfort_score": 0.20,
+        "solo_score": 0.25,
         "quiet_score": 0.20,
-        "quality_score": 0.10,
-        "popularity_score": 0.10,
-    },
-    "family": {
-        "friends_score": 0.25,
-        "social_score": 0.20,
-        "activity_score": 0.20,
+        "nature_score": 0.15,
         "comfort_score": 0.15,
+        "scenic_score": 0.10,
         "quality_score": 0.10,
-        "popularity_score": 0.10,
+        "popularity_score": 0.05,
     },
 }
+
+# ── Family bonus configuration ───────────────────────────────
+
+FAMILY_CATEGORY_BONUS = 1.0
+FAMILY_CATEGORY_BONUS_SET: frozenset[str] = frozenset({
+    "Park", "Beach", "Zoo", "Botanical Garden",
+    "Museum", "Theme Park", "Lake", "Playground",
+})
+
+FAMILY_BUDGET_BONUS: dict[str, float] = {
+    "budget": 0.5,
+    "moderate": 0.3,
+}
+
+
+def _family_category_bonus(category: str | None) -> float:
+    """Return the category bonus for a family-occasion place."""
+    if category and category in FAMILY_CATEGORY_BONUS_SET:
+        return FAMILY_CATEGORY_BONUS
+    return 0.0
+
+
+def _family_budget_bonus(budget_level: str | None) -> float:
+    """Return the budget bonus for a family-occasion place."""
+    if budget_level:
+        return FAMILY_BUDGET_BONUS.get(budget_level.lower(), 0.0)
+    return 0.0
 
 
 def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -54,23 +103,31 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlng / 2) ** 2
+    )
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 def _build_score_expression(occasion: str):
-    """Build a SQLAlchemy expression for the weighted composite score."""
+    """Build a SQLAlchemy expression for the weighted composite score.
+
+    Uses ``func.coalesce()`` on every column so that NULL values are
+    treated as 0.0 instead of crashing the query.
+
+    For ``family``, bonuses are applied in Python post-fetch (see
+    ``RecommendationService.recommend``), so the SQL expression only
+    covers the base weighted sum.
+    """
     weights = OCCASION_WEIGHTS.get(occasion, OCCASION_WEIGHTS["date"])
-    terms = []
-    for col_name, weight in weights.items():
-        col = getattr(Place, col_name)
-        terms.append(
-            cast(case((col.is_(None), 0.0), else_=col), Float) * weight
-        )
-    expr = terms[0]
-    for t in terms[1:]:
-        expr = expr + t
-    return expr.label("computed_score")
+    score_expr = sum(
+        func.coalesce(getattr(Place, column), 0) * weight
+        for column, weight in weights.items()
+    )
+    return score_expr.label("computed_score")
 
 
 class RecommendationService:
@@ -92,6 +149,11 @@ class RecommendationService:
         """Return top-scored places for the given occasion.
 
         Optionally filters by distance (approximate haversine bounding box).
+
+        For the ``family`` occasion, category and budget bonuses are
+        added to the base weighted score in Python after the DB fetch.
+        The DB query still orders by the base weighted score so the
+        bonus logic stays in one place and doesn't leak into SQL.
         """
         score_expr = _build_score_expression(occasion)
 
@@ -100,7 +162,9 @@ class RecommendationService:
         # ── Distance bounding-box pre-filter in SQL ────────
         if lat is not None and lng is not None and distance_km is not None:
             lat_delta = math.degrees(distance_km / 111.0)
-            lng_delta = math.degrees(distance_km / (111.0 * math.cos(math.radians(lat))))
+            lng_delta = math.degrees(
+                distance_km / (111.0 * math.cos(math.radians(lat)))
+            )
             q = q.where(
                 Place.latitude.is_not(None),
                 Place.longitude.is_not(None),
@@ -112,6 +176,8 @@ class RecommendationService:
 
         result = await self.db.execute(q)
         rows = result.all()
+
+        is_family = occasion == "family"
 
         out: list[dict] = []
         for place, computed in rows:
@@ -126,6 +192,7 @@ class RecommendationService:
                 "longitude": place.longitude,
                 "date_score": place.date_score,
                 "friends_score": place.friends_score,
+                "family_score": place.family_score,
                 "solo_score": place.solo_score,
                 "romantic_score": place.romantic_score,
                 "conversation_score": place.conversation_score,
@@ -146,9 +213,32 @@ class RecommendationService:
                 "computed_score": round(float(computed or 0), 4),
             }
 
+            # ── Family bonuses ─────────────────────────────
+            if is_family:
+                cat_bonus = _family_category_bonus(place.category)
+                bud_bonus = _family_budget_bonus(
+                    getattr(place, "budget_level", None)
+                )
+                total_bonus = cat_bonus + bud_bonus
+                d["computed_score"] = round(d["computed_score"] + total_bonus, 4)
+                d["family_category_bonus"] = cat_bonus
+                d["family_budget_bonus"] = bud_bonus
+
             # Add distance_km when a reference point was provided
-            if lat is not None and lng is not None and place.latitude is not None and place.longitude is not None:
-                d["distance_km"] = round(_haversine_km(lat, lng, place.latitude, place.longitude), 4)
+            if (
+                lat is not None
+                and lng is not None
+                and place.latitude is not None
+                and place.longitude is not None
+            ):
+                d["distance_km"] = round(
+                    _haversine_km(lat, lng, place.latitude, place.longitude), 4
+                )
 
             out.append(d)
+
+        # Re-sort after bonuses so family results are correctly ranked
+        if is_family:
+            out.sort(key=lambda x: x["computed_score"], reverse=True)
+
         return out

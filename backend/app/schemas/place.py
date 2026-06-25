@@ -25,6 +25,7 @@ class PlaceRead(BaseModel):
 
     date_score: float | None = None
     friends_score: float | None = None
+    family_score: float | None = None
     solo_score: float | None = None
 
     romantic_score: float | None = None

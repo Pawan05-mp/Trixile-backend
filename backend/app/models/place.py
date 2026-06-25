@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, time, timezone
 
 from sqlalchemy import (
-    Float, Integer, String, DateTime, Text, Time,
+    Float, Integer, String, DateTime, Text, Time, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,6 +27,7 @@ class Place(Base):
     rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     reviews: Mapped[int | None] = mapped_column(Integer, nullable=True)
     average_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    budget_level: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 'budget' | 'moderate' | 'upscale'
 
     # ── Location ─────────────────────────────────────────────
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -35,6 +36,7 @@ class Place(Base):
     # ── Occasion scores ──────────────────────────────────────
     date_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
     friends_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
+    family_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
     solo_score: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)
 
     # ── Atmosphere scores ────────────────────────────────────
@@ -75,5 +77,6 @@ class Place(Base):
     __table_args__ = (
         Index("idx_places_date_score", "date_score"),
         Index("idx_places_friends_score", "friends_score"),
+        Index("idx_places_family_score", "family_score"),
         Index("idx_places_solo_score", "solo_score"),
     )
