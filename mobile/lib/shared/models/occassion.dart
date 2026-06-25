@@ -1,5 +1,5 @@
 enum Occasion {
-  date('date', 'Date Night'),
+  date('date', 'Date'),
   friends('friends', 'Friends'),
   family('family', 'Family'),
   solo('solo', 'Solo');
