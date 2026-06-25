@@ -51,8 +51,8 @@ class Settings(BaseSettings):
     # ── Supabase (used only to verify Google/Facebook OAuth
     #    sessions created client-side by supabase_flutter — see
     #    AuthService.authenticate_social) ─────────────────────
-    SUPABASE_URL: str = ""
-    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_URL: str = "https://ypicbilajipxjgkqxuht.supabase.co"
+    SUPABASE_ANON_KEY: str = "sb_publishable_CUj1PhLXnuGiGg-f_nrpKg_RENDSuRQ"
 
 
 settings = Settings()

@@ -88,22 +88,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  Future<void> _continueWithFacebook() async {
-    try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.facebook,
-        redirectTo: kIsWeb ? null : AppConstants.supabaseRedirectUrl,
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start Facebook sign-in: $e')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

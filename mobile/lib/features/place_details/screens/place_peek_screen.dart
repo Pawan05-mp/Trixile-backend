@@ -119,10 +119,11 @@ class _PlacePeekScreenState extends ConsumerState<PlacePeekScreen> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+               child: SingleChildScrollView(
+                 padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
                     // ── Name & rating row ─────────────────────────
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,6 +134,8 @@ class _PlacePeekScreenState extends ConsumerState<PlacePeekScreen> {
                             children: [
                               Text(
                                 widget.place.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: AppTypography.headlineLgMobile.copyWith(
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -140,17 +143,28 @@ class _PlacePeekScreenState extends ConsumerState<PlacePeekScreen> {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, color: context.primary, size: 16),
+                                  Icon(
+                                    Icons.location_on,
+                                    color: context.primary,
+                                    size: 16,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    widget.place.area,
-                                    style: AppTypography.bodyMd.copyWith(color: context.onSurfaceVariant),
+                                  Expanded(
+                                    child: Text(
+                                      widget.place.area,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodyMd.copyWith(
+                                        color: context.onSurfaceVariant,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
@@ -221,15 +235,15 @@ class _PlacePeekScreenState extends ConsumerState<PlacePeekScreen> {
 
                     const SizedBox(height: AppSpacing.xl),
 
-                    // ── Bento info grid ────────────────────────────
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 1.6,
-                      children: [
+                     // ── Bento info grid ────────────────────────────
+                     GridView.count(
+                       shrinkWrap: true,
+                       physics: const NeverScrollableScrollPhysics(),
+                       crossAxisCount: 2,
+                       crossAxisSpacing: AppSpacing.md,
+                       mainAxisSpacing: AppSpacing.md,
+                       childAspectRatio: 1.3,
+                       children: [
                         _InfoTile(
                           icon: Icons.straighten,
                           label: 'Distance',
@@ -363,8 +377,11 @@ class _TextBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      constraints: const BoxConstraints(maxWidth: 200),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AppTypography.bodyMd.copyWith(
           color: context.onSurfaceVariant,
           fontWeight: FontWeight.w500,
@@ -400,7 +417,7 @@ class _InfoTile extends StatelessWidget {
             style: AppTypography.caption.copyWith(letterSpacing: 0.8),
           ),
           const SizedBox(height: 2),
-          Text(value, style: AppTypography.labelMd.copyWith(fontWeight: FontWeight.w700)),
+          Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.labelMd.copyWith(fontWeight: FontWeight.w700)),
         ],
       ),
     );

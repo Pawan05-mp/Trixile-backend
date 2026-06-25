@@ -161,10 +161,8 @@ final recommendationsProvider = FutureProvider<List<Place>>((ref) async {
       debugPrint('📦 Using ${cached.length} cached recommendations');
       return cached.map((j) => Place.fromRecommendationJson(j)).toList();
     }
-    debugPrint('⚠️ No cached recommendations available');
-    throw const OfflineException(
-      'Unable to load recommendations. You appear to be offline — check your connection and try again.',
-    );
+    debugPrint('⚠️ No cached recommendations available — returning empty');
+    return [];
   }
 });
 

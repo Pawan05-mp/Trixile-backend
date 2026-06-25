@@ -13,7 +13,7 @@ class AppConstants {
   // sits behind a reverse proxy that adds `/api`, restore the suffix.
   static const String baseUrl =
       'https://trixile-backend.onrender.com';
-  static const int apiTimeoutMs = 15000;
+  static const int apiTimeoutMs = 120000;
 
   // Supabase OAuth (Google/Facebook). Must exactly match a URL registered
   // under Supabase Dashboard -> Authentication -> URL Configuration ->

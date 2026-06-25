@@ -107,29 +107,27 @@ class Place {
   }
 
   factory Place.fromRecommendationJson(Map<String, dynamic> json) {
+    final rating = (json['rating'] as num?)?.toDouble();
     return Place(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Unnamed Place',
-      description: json['description'] as String? ?? '',
+      description: json['area'] as String? ?? '',
       categoryId: json['category'] as String? ?? '',
       categoryName: json['category'] as String?,
       dnaCategory: json['category'] as String? ?? 'restaurant',
-      area: json['area'] as String? ?? 'Chennai Core',
+      area: json['area'] as String? ?? 'Pondicherry',
       budgetLevel: _parseBudgetLevel(json['budget_level']),
-      qualityScore: (json['score'] as num? ?? 0.8).toDouble(),
+      qualityScore: rating != null ? (rating / 5.0).clamp(0, 1) : 0.8,
       popularityIndex: 0.5,
-      latitude: (json['latitude'] as num? ?? 13.0603).toDouble(),
-      longitude: (json['longitude'] as num? ?? 80.2415).toDouble(),
+      latitude: (json['latitude'] as num? ?? 11.9416).toDouble(),
+      longitude: (json['longitude'] as num? ?? 79.8083).toDouble(),
       imageUrls: json['thumbnail_url'] != null
           ? [json['thumbnail_url'] as String]
           : [],
       imagePath: json['thumbnail_url'] as String?,
       tags: [],
       indoor: true,
-      score: (json['score'] as num? ?? 0.0).toDouble(),
-      occasion: json['occasion'] != null
-          ? Occasion.fromApi(json['occasion'] as String)
-          : null,
+      score: (json['computed_score'] as num? ?? 0.0).toDouble(),
       distanceKm: (json['distance_km'] as num? ?? 0.0).toDouble(),
       reasons:
           (json['reasons'] as List<dynamic>?)

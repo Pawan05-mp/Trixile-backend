@@ -25,7 +25,7 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
   // Occasion filters
   late final Set<String> _selectedOccasions;
   static const _occasionOptions = [
-    ('Date Night', AppColors.dateNight, Occasion.date),
+    ('Date', AppColors.dateNight, Occasion.date),
     ('Friends', AppColors.friends, Occasion.friends),
     ('Family', AppColors.family, Occasion.family),
     ('Solo', AppColors.solo, Occasion.solo),
