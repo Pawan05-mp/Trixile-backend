@@ -55,12 +55,14 @@ class HomeDashboardScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(recommendationsProvider),
         child: ListView(
-          padding: const EdgeInsets.only(top: 80, bottom: 24),
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + kToolbarHeight + 12, bottom: 24),
           children: [
             // ── Search bar ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.marginMobile),
               child: TextField(
+                readOnly: true,
+                onTap: () => context.push(AppRouter.filters),
                 style: AppTypography.bodyLg,
                 decoration: InputDecoration(
                   hintText: 'Search places...',
@@ -284,7 +286,7 @@ class _PlaceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(place.name, style: AppTypography.titleMd),
+                  Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleMd),
                   const SizedBox(height: 4),
                   Text(
                     place.description,
@@ -358,15 +360,18 @@ class _NearbyCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(place.name, style: AppTypography.titleMd),
+                    Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleMd),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(Icons.location_on_outlined, size: 14, color: context.onSurfaceVariant),
                         const SizedBox(width: 2),
-                        Text(
-                          '${place.distanceKm.toStringAsFixed(1)} km',
-                          style: AppTypography.bodyMd.copyWith(color: context.onSurfaceVariant),
+                        Expanded(
+                          child: Text(
+                            '${place.distanceKm.toStringAsFixed(1)} km',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodyMd.copyWith(color: context.onSurfaceVariant),
+                          ),
                         ),
                       ],
                     ),

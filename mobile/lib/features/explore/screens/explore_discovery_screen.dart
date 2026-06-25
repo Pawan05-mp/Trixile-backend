@@ -58,7 +58,7 @@ class _ExploreDiscoveryScreenState extends ConsumerState<ExploreDiscoveryScreen>
         onTap: (i) => AppRouter.goToTab(context, i),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(top: 80, bottom: 24),
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + kToolbarHeight + 12, bottom: 24),
         children: [
           // ── Search bar ───────────────────────────────────────────
           Padding(
@@ -284,7 +284,7 @@ class _ExploreCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(place.name, style: AppTypography.sectionHeader),
+                  Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.sectionHeader),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -346,21 +346,23 @@ class _HorizontalPlaceCard extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star, color: AppColors.star, size: 14),
-                    const SizedBox(width: 2),
-                    Text(place.starRating.toStringAsFixed(1), style: AppTypography.labelSm.copyWith(fontWeight: FontWeight.w700)),
-                  ],
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.md),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: context.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, color: AppColors.star, size: 14),
+                      const SizedBox(width: 2),
+                      Text(place.starRating.toStringAsFixed(1), style: AppTypography.labelSm.copyWith(fontWeight: FontWeight.w700)),
+                    ],
+                  ),
                 ),
               ),
             ),
